@@ -25,10 +25,11 @@ export interface Expense {
   title: string; // e.g., "Rent"
   amount: number;
   currency: Currency;
-  frequency: 'Monthly' | 'Weekly' | 'Yearly';
+  frequency: 'One-time' | 'Monthly' | 'Weekly' | 'Yearly';
   category: string;
   date: string;
   dayOfMonth?: number;
+  isPaid?: boolean; // New field: true if money left the wallet, false if planned
 }
 
 export interface Asset {
@@ -37,6 +38,8 @@ export interface Asset {
   amount: number;
   currency: Currency;
   type: 'Income' | 'Balance';
+  isReceived?: boolean; // true if money is in hand, false if projected
+  autoCredit?: boolean; // New field: if true, automatically set isReceived=true when date arrives
   date: string;
 }
 
@@ -50,11 +53,21 @@ export interface Goal {
   date: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  isRead: boolean;
+  type: 'expense' | 'debt';
+}
+
 export interface FinancialState {
   debts: Debt[];
   expenses: Expense[];
   assets: Asset[];
   goals: Goal[];
+  notifications: AppNotification[];
 }
 
 export interface ChatMessage {

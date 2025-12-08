@@ -16,7 +16,10 @@ import {
   RefreshCw,
   FileText,
   Download,
-  Upload
+  Upload,
+  Bell,
+  Scale,
+  ChevronRight
 } from 'lucide-react';
 
 export { 
@@ -36,5 +39,8 @@ export {
   RefreshCw,
   FileText,
   Download,
-  Upload
+  Upload,
+  Bell,
+  Scale,
+  ChevronRight
 };

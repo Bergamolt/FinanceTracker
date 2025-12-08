@@ -26,7 +26,7 @@ const addExpenseTool: FunctionDeclaration = {
       amount: { type: Type.NUMBER, description: 'Amount of money spent' },
       currency: { type: Type.STRING, description: 'Currency code (USD, EUR, RUB, etc.)' },
       category: { type: Type.STRING, description: 'Category (Food, Rent, Transport, etc.)' },
-      frequency: { type: Type.STRING, description: 'Frequency: Monthly, Weekly, or Yearly. Default to Monthly if unsure but recurring.' },
+      frequency: { type: Type.STRING, description: 'Frequency: One-time, Monthly, Weekly, or Yearly. Default to One-time if not recurring.' },
     },
     required: ['title', 'amount', 'currency', 'category']
   }
@@ -102,7 +102,7 @@ export const AIChat: React.FC<AIChatProps> = ({
       {
         id: 'init',
         role: 'model',
-        text: "Привет! Я твой финансовый советник FinanceAI. Я могу проанализировать твои финансы, а также помочь добавить новые записи. Просто напиши 'Я потратил 500 руб на такси' или пришли список покупок.",
+        text: "Привет! Я твой финансовый советник FinanceAI. Я могу проанализировать твои финансы, а также помочь добавить новые записи. Просто напиши 'Я потратил 5 usd на такси' или пришли список покупок.",
         timestamp: Date.now()
       }
     ]);
@@ -147,7 +147,7 @@ export const AIChat: React.FC<AIChatProps> = ({
               amount: args.amount,
               currency: (args.currency as Currency) || Currency.RUB,
               category: args.category,
-              frequency: (args.frequency as any) || 'Monthly'
+              frequency: (args.frequency as any) || 'One-time'
             });
           } else if (call.name === 'addAsset') {
             onAddAsset({

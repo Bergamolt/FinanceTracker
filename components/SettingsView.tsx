@@ -1,17 +1,27 @@
 import React, { useState, useRef } from 'react';
-import { Trash2, RefreshCw, AlertCircle, Download, Upload } from './ui/Icons';
+import { Trash2, RefreshCw, AlertCircle, Download, Upload, TrendingUp, CheckCircle } from './ui/Icons';
 import { Modal } from './ui/Modal';
-import { FinancialState } from '../types';
+import { FinancialState, Currency } from '../types';
+import { InputGroup } from './ui/InputGroup';
 
 interface SettingsViewProps {
   onClearData: () => void;
   onResetData: () => void;
   onImportData?: (data: FinancialState) => void;
+  exchangeRates: Record<string, number>;
+  onUpdateRates: (rates: Record<string, number>) => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onClearData, onResetData, onImportData }) => {
-  const [activeModal, setActiveModal] = useState<'clear' | 'reset' | null>(null);
+export const SettingsView: React.FC<SettingsViewProps> = ({ 
+  onClearData, 
+  onResetData, 
+  onImportData,
+  exchangeRates,
+  onUpdateRates
+}) => {
+  const [activeModal, setActiveModal] = useState<'clear' | 'reset' | 'rates' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [tempRates, setTempRates] = useState(exchangeRates);
 
   const handleClear = () => {
     onClearData();
@@ -20,6 +30,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClearData, onReset
 
   const handleReset = () => {
     onResetData();
+    setActiveModal(null);
+  };
+
+  const handleSaveRates = () => {
+    onUpdateRates(tempRates);
     setActiveModal(null);
   };
 
@@ -69,6 +84,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClearData, onReset
 
   return (
     <div className="space-y-6">
+      
+      {/* Exchange Rates Settings */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <TrendingUp size={20} className="text-slate-400" />
+          Курсы валют (к USD)
+        </h3>
+        <p className="text-slate-500 mb-4 text-sm">
+          Настройте курсы валют для корректного отображения общей статистики в единой валюте.
+          Базовая валюта: USD (1.0).
+        </p>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+           {Object.entries(exchangeRates).map(([curr, rate]) => (
+             <div key={curr} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+               <div className="text-xs text-slate-400 font-bold">{curr}</div>
+               <div className="font-mono font-medium text-slate-700">{rate}</div>
+             </div>
+           ))}
+        </div>
+
+        <button 
+          onClick={() => { setTempRates(exchangeRates); setActiveModal('rates'); }}
+          className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition-colors"
+        >
+          Изменить курсы
+        </button>
+      </div>
+
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Download size={20} className="text-slate-400" />
@@ -149,9 +193,44 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClearData, onReset
       </div>
       
       <div className="text-center text-xs text-slate-400 mt-8">
-        <p>FinanceAI Master v1.1.0</p>
+        <p>FinanceAI Master v1.2.0</p>
         <p>Local Storage Persistence Enabled</p>
       </div>
+
+      {/* Exchange Rates Modal */}
+      <Modal 
+        isOpen={activeModal === 'rates'} 
+        onClose={() => setActiveModal(null)} 
+        title="Настройка курсов валют"
+      >
+         <div className="space-y-4">
+           <p className="text-sm text-slate-500 bg-blue-50 p-3 rounded-lg">
+             Укажите стоимость 1 USD в других валютах. Например, если 1$ = 41.5 UAH, введите 41.5.
+           </p>
+           {Object.keys(Currency).map(key => {
+             const curr = Currency[key as keyof typeof Currency];
+             const isUSD = curr === Currency.USD;
+             return (
+               <InputGroup key={curr} label={`Курс ${curr} (за 1 USD)`}>
+                 <input 
+                   type="number" 
+                   step="0.01"
+                   disabled={isUSD}
+                   className={`border p-3 rounded-xl w-full ${isUSD ? 'bg-slate-100 text-slate-400' : 'bg-slate-50'}`}
+                   value={tempRates[curr] || ''} 
+                   onChange={e => setTempRates({...tempRates, [curr]: parseFloat(e.target.value)})} 
+                 />
+               </InputGroup>
+             )
+           })}
+           <button 
+              onClick={handleSaveRates}
+              className="w-full mt-4 bg-slate-800 text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold text-lg hover:bg-slate-900 shadow-lg active:scale-95 transition-all"
+            >
+              <CheckCircle size={20} /> Сохранить курсы
+            </button>
+         </div>
+      </Modal>
 
       {/* Clear Data Modal */}
       <Modal 
