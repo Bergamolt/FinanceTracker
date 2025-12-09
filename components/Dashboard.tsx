@@ -7,11 +7,24 @@ import { Modal } from './ui/Modal';
 interface DashboardProps {
   data: FinancialState;
   exchangeRates: Record<string, number>;
+  mainCurrency: Currency;
 }
 
 type MetricType = 'netWorth' | 'forecast' | 'monthly' | 'debt';
 
-export const Dashboard: React.FC<DashboardProps> = ({ data, exchangeRates }) => {
+const CardWrapper = ({ children, colorClass, onClick }: { children?: React.ReactNode, colorClass: string, onClick: () => void }) => (
+  <div 
+    onClick={onClick}
+    className={`bg-white rounded-xl shadow-sm p-6 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${colorClass}`}
+  >
+    {children}
+    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+       <ChevronRight size={16} />
+    </div>
+  </div>
+);
+
+export const Dashboard: React.FC<DashboardProps> = ({ data, exchangeRates, mainCurrency }) => {
   const [activeMetric, setActiveMetric] = useState<MetricType | null>(null);
 
   // --- 1. Analytics Calculation (Shared Logic) ---
@@ -37,26 +50,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, exchangeRates }) => 
       }
     });
 
-    // Determine Dominant Currency
-    let maxVolumeUSD = 0;
-    let dominantCurrency = Currency.USD;
-
-    const getUSDValue = (amount: number, curr: string) => amount / (exchangeRates[curr] || 1);
-
-    Object.entries(debtSum).forEach(([curr, amount]) => {
-      const val = getUSDValue(amount, curr);
-      if (val > maxVolumeUSD) {
-        maxVolumeUSD = val;
-        dominantCurrency = curr as Currency;
-      }
-    });
-    Object.entries(assetSum).forEach(([curr, amount]) => {
-      const val = getUSDValue(amount, curr);
-      if (val > maxVolumeUSD) {
-        maxVolumeUSD = val;
-        dominantCurrency = curr as Currency;
-      }
-    });
+    const dominantCurrency = mainCurrency;
 
     const toDominant = (amount: number, curr: string) => {
       if (curr === dominantCurrency) return amount;
@@ -144,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, exchangeRates }) => 
        totalMonthlyExpense,
        toDominant
     };
-  }, [data, exchangeRates]);
+  }, [data, exchangeRates, mainCurrency]);
 
   // --- 2. Drilldown Data Generator ---
   const getDrilldownData = () => {
@@ -228,18 +222,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, exchangeRates }) => 
   };
 
   const drilldown = getDrilldownData();
-
-  const CardWrapper = ({ children, colorClass, onClick }: { children: React.ReactNode, colorClass: string, onClick: () => void }) => (
-    <div 
-      onClick={onClick}
-      className={`bg-white rounded-xl shadow-sm p-6 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${colorClass}`}
-    >
-      {children}
-      <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
-         <ChevronRight size={16} />
-      </div>
-    </div>
-  );
 
   return (
     <>

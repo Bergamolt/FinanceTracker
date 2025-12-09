@@ -10,6 +10,8 @@ interface SettingsViewProps {
   onImportData?: (data: FinancialState) => void;
   exchangeRates: Record<string, number>;
   onUpdateRates: (rates: Record<string, number>) => void;
+  mainCurrency: Currency;
+  onUpdateMainCurrency: (c: Currency) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ 
@@ -17,7 +19,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onResetData, 
   onImportData,
   exchangeRates,
-  onUpdateRates
+  onUpdateRates,
+  mainCurrency,
+  onUpdateMainCurrency
 }) => {
   const [activeModal, setActiveModal] = useState<'clear' | 'reset' | 'rates' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,11 +93,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
           <TrendingUp size={20} className="text-slate-400" />
-          Курсы валют (к USD)
+          Валюта и Курсы
         </h3>
-        <p className="text-slate-500 mb-4 text-sm">
-          Настройте курсы валют для корректного отображения общей статистики в единой валюте.
-          Базовая валюта: USD (1.0).
+        
+        <div className="mb-6">
+           <InputGroup label="Основная валюта (для отображения итогов)">
+             <select 
+               value={mainCurrency} 
+               onChange={(e) => onUpdateMainCurrency(e.target.value as Currency)}
+               className="border p-3 rounded-xl w-full bg-slate-50 font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-colors"
+             >
+               {Object.values(Currency).map(c => <option key={c} value={c}>{c}</option>)}
+             </select>
+           </InputGroup>
+           <p className="text-xs text-slate-400 mt-2">Все графики и сводки будут конвертироваться в эту валюту.</p>
+        </div>
+
+        <p className="text-slate-500 mb-4 text-sm font-bold">
+          Текущие курсы (к USD):
         </p>
         
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -193,7 +210,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
       
       <div className="text-center text-xs text-slate-400 mt-8">
-        <p>FinanceAI Master v1.2.0</p>
+        <p>FinanceAI Master v1.3.0</p>
         <p>Local Storage Persistence Enabled</p>
       </div>
 

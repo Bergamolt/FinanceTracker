@@ -75,6 +75,15 @@ const App: React.FC = () => {
     }
   });
 
+  const [mainCurrency, setMainCurrency] = useState<Currency>(() => {
+    try {
+      const saved = localStorage.getItem('finance_main_currency');
+      return (saved as Currency) || Currency.USD;
+    } catch {
+      return Currency.USD;
+    }
+  });
+
   const notificationPanelRef = useRef<HTMLDivElement>(null);
 
   // Close notifications when clicking outside
@@ -104,6 +113,11 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('finance_rates', JSON.stringify(exchangeRates));
   }, [exchangeRates]);
+
+  // Persist main currency
+  useEffect(() => {
+    localStorage.setItem('finance_main_currency', mainCurrency);
+  }, [mainCurrency]);
 
   // Logic: Auto-Credit & Payment Notifications
   useEffect(() => {
@@ -294,6 +308,7 @@ const App: React.FC = () => {
   const resetData = () => {
     setFinancialData(INITIAL_DATA);
     setExchangeRates(DEFAULT_RATES);
+    setMainCurrency(Currency.USD);
     setActiveTab('dashboard');
   };
 
@@ -464,6 +479,7 @@ const App: React.FC = () => {
             <Dashboard 
               data={financialData} 
               exchangeRates={exchangeRates} 
+              mainCurrency={mainCurrency}
             />
           )}
           
@@ -481,6 +497,8 @@ const App: React.FC = () => {
               onAddAsset={addAsset}
               onUpdateAsset={updateAsset}
               onDeleteAsset={deleteAsset}
+              exchangeRates={exchangeRates}
+              mainCurrency={mainCurrency}
             />
           )}
 
@@ -493,6 +511,8 @@ const App: React.FC = () => {
               onImportData={importData} 
               exchangeRates={exchangeRates}
               onUpdateRates={setExchangeRates}
+              mainCurrency={mainCurrency}
+              onUpdateMainCurrency={setMainCurrency}
             />
           )}
         </div>

@@ -18,6 +18,8 @@ interface ReportsViewProps {
   onDeleteDebt: (id: string) => void;
   onDeleteExpense: (id: string) => void;
   onDeleteAsset: (id: string) => void;
+  exchangeRates: Record<string, number>;
+  mainCurrency: Currency;
 }
 
 type EntryType = 'expense' | 'income' | 'debt';
@@ -29,7 +31,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   onAddDebt, onUpdateDebt, 
   onAddExpense, onUpdateExpense, 
   onAddAsset, onUpdateAsset,
-  onDeleteDebt, onDeleteExpense, onDeleteAsset
+  onDeleteDebt, onDeleteExpense, onDeleteAsset,
+  exchangeRates,
+  mainCurrency
 }) => {
   const [activeType, setActiveType] = useState<EntryType>('expense');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,6 +64,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     dayOfMonth: 1 // for expense
   });
 
+  // --- Currency Logic ---
+  const { dominantCurrency, convert } = useMemo(() => {
+    // No longer auto-calculating volume. Using mainCurrency from props.
+    const bestCurrency = mainCurrency;
+
+    const convertFn = (amount: number, curr: string) => {
+      if (curr === bestCurrency) return amount;
+      const rateFrom = exchangeRates[curr] || 1;
+      const rateTo = exchangeRates[bestCurrency] || 1;
+      return (amount / rateFrom) * rateTo;
+    };
+
+    return { dominantCurrency: bestCurrency, convert: convertFn };
+  }, [expenses, assets, debts, exchangeRates, mainCurrency]);
+
   // --- Analytics Data ---
   const categoryData = useMemo(() => {
     const now = new Date();
@@ -74,13 +93,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     const map: Record<string, number> = {};
     monthlyExpenses.forEach(e => {
         const cat = e.category || 'Прочее';
-        map[cat] = (map[cat] || 0) + e.amount;
+        // Convert amount to dominant currency for chart accuracy
+        const val = convert(e.amount, e.currency);
+        map[cat] = (map[cat] || 0) + val;
     });
 
     return Object.entries(map)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
-  }, [expenses]);
+  }, [expenses, convert]);
 
   const handleOpenModal = (type: EntryType) => {
     setActiveType(type);
@@ -290,10 +311,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       
       {/* Chart Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <PieChartIcon size={20} className="text-orange-500" />
-            Расходы (Текущий месяц)
-         </h3>
+         <div className="flex justify-between items-start mb-4">
+           <div>
+             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <PieChartIcon size={20} className="text-orange-500" />
+                Расходы (Текущий месяц)
+             </h3>
+             <p className="text-xs text-slate-400 mt-1">Все валюты конвертированы в {dominantCurrency}</p>
+           </div>
+         </div>
          
          {categoryData.length > 0 ? (
             <div className="h-64 w-full">
@@ -313,7 +339,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: any, name: any) => [`${value.toLocaleString()}`, name]}
+                    formatter={(value: any, name: any) => [`${Math.round(value).toLocaleString()} ${dominantCurrency}`, name]}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" />
@@ -376,7 +402,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           }
 
           // Use totalAmount for debt, amount for others
-          const displayAmount = item.entryType === 'debt' ? (item as Debt).totalAmount : (item as any).amount;
+          const originalAmount = item.entryType === 'debt' ? (item as Debt).totalAmount : (item as any).amount;
 
           return (
             <div 
@@ -397,11 +423,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 </div>
               </div>
               
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end">
                  <span className={`font-mono font-bold text-lg ${isPending ? 'text-slate-400' : (item.entryType === 'asset' ? 'text-emerald-600' : 'text-slate-800')}`}>
-                   {sign}{displayAmount.toLocaleString()} {item.currency}
+                   {sign}{originalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {item.currency}
                  </span>
-                 {/* Delete button removed from here */}
               </div>
             </div>
           );
